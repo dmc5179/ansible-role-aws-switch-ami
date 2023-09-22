@@ -1,0 +1,15 @@
+---
+# defaults file for rhel-6-els
+
+instance_tag: 'rhel-6-els'
+
+#key_pair_name: ''
+
+aws_ssl_enabled: true
+
+#aws_region:
+#aws_ec2_url: 'https://ec2.{{ aws_region }}.amazonaws.com'
+
+# This is the AMI that instances will be converted to.
+# RHEL 7 for example, when converting from Centos 7
+target_ami: 
