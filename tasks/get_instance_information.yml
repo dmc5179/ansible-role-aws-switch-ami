@@ -2,50 +2,66 @@
 # Build information from the inspected instance
 # This information should not come from accessing the instance directly.
 
-- name: RHEL-6-INSTANCE | Gather information from RHEL6 instance
+- name: Gather information from donor instance
   community.aws.ec2_instance_info:
     aws_access_key: "{{ inject.aws_access_key | default(omit) }}"
     aws_secret_key: "{{ inject.aws_secret_key | default(omit) }}"
     security_token: "{{ ansible_env.AWS_SESSION_TOKEN | default(omit) }}"
-    profile: "{{ inject.profile | default(omit) }}"
+    #profile: "{{ inject.profile | default(omit) }}"
     region: "{{ inject.region | default(omit) }}"
     ec2_url: '{{ aws_ec2_url | default(omit) }}'
     validate_certs: '{{ aws_ssl_enabled }}'
-    filters:
-      "tag:task": '{{ instance_tag }}'
+    instance_ids:
+      - '{{ donor_instance_id }}'
+#    filters:
+#      "tag:task": '{{ instance_tag }}'
   register: donor_instances_info
   delegate_to: localhost
   delegate_facts: true
 
-#- name: show instances
-#  debug:
-#    var: donor_instances_info
+- name: show instances
+  debug:
+    var: donor_instances_info
 
-- name: donor | Gather the details related to the instance
+#- fail:
+
+- name: Gather the details related to the instance
   ansible.builtin.set_fact:
     donor_conf_dict: {
-    'az': "{{ item.1.placement.availability_zone }}",
-    'key': "{{ item.1.key_name }}",
-    'ip_address': "{{ item.1.private_ip_address }}",
-    'subnet_id': "{{ item.1.subnet_id }}",
-    'instance_id': "{{ item.1.instance_id }}",
-    'root_volume_device_name': "{{ item.1.root_device_name }}",
-    # 'security_groups': "{{ item.1.security_groups }}",
-    # 'tags': "{{ item.1.tags }}",
-    # 'id': "{{ item.1.instance_id }}",
-    # 'type': "{{ item.1.instance_type }}",
-    # 'block_device_mappings': "{{ item.1.block_device_mappings }}",
-    # 'root_volume_id': "{{ item.1.block_device_mappings }} | community.general.json_query('[?device_name == `/dev/sda1`].ebs.volume_id | [-1]') }}",
-    # 'root_volume_device_name': "{{ item.1.block_device_mappings | community.general.json_query('[?device_name == `/dev/sda1`].device_name | [-1]') }}"
+    'az': "{{ donor_instances_info.instances[0].placement.availability_zone }}",
+    'key_name': "{{ donor_instances_info.instances[0].key_name }}",
+    'ip_address': "{{ donor_instances_info.instances[0].private_ip_address }}",
+    'subnet_id': "{{ donor_instances_info.instances[0].subnet_id }}",
+    'instance_id': "{{ donor_instances_info.instances[0].instance_id }}",
+    'root_volume_device_name': "{{ donor_instances_info.instances[0].root_device_name }}",
+    'security_groups': "{{ donor_instances_info.instances[0].security_groups }}",
+    'tags': "{{ donor_instances_info.instances[0].tags }}",
+    'instance_type': "{{ donor_instances_info.instances[0].instance_type }}",
+    'block_device_mappings': "{{ donor_instances_info.instances[0].block_device_mappings }}",
+    'vpc_id': "{{ donor_instances_info.instances[0].vpc_id }}",
+    'ebs_optimized': "{{ donor_instances_info.instances[0].ebs_optimized }}",
+    'ena_support': "{{ donor_instances_info.instances[0].ena_support }}",
+    'group_name': "{{ donor_instances_info.instances[0].placement.group_name }}"
+    # 'root_volume_id': "{{ donor_instances_info.instances[0].block_device_mappings }} | community.general.json_query('[?device_name == `/dev/sda1`].ebs.volume_id | [-1]') }}",
+    # 'root_volume_device_name': "{{ donor_instances_info.instances[0].block_device_mappings | community.general.json_query('[?device_name == `/dev/sda1`].device_name | [-1]') }}"
     }
-  run_once: true
+  #run_once: true
   register: donor_config_dict
   delegate_to: localhost
-  with_indexed_items: "{{ donor_instances_info.instances }}"
+  #with_indexed_items: "{{ donor_instances_info.instances }}"
 
-#- name: Show donor config
-#  debug:
-#    var: donor_conf_dict
+  # Add the IAM instance profile if it exists
+  # When no IAM instance profile is used, the value does not exist in the return dict
+- name: Add IAM profile if it exists
+  ansible.builtin.set_fact:
+    donor_conf_dict: "{{ donor_conf_dict | default({}) | combine ( {'iam_instance_profile' : donor_instances_info.instances[0].iam_instance_profile.arn} ) }}"
+  when: donor_instances_info.instances[0].iam_instance_profile is defined
+
+- name: Show donor config
+  debug:
+    var: donor_conf_dict
+
+- fail:
 
 #- name: Convert donor config dictionary to list
 #  ansible.builtin.set_fact:

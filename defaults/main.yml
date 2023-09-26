@@ -12,4 +12,4 @@ aws_ssl_enabled: true
 
 # This is the AMI that instances will be converted to.
 # RHEL 7 for example, when converting from Centos 7
-target_ami: 
+target_ami_id: 

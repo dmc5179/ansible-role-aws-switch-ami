@@ -4,26 +4,30 @@
   debug:
     var: donor_instance
 
+- fail:
+
+  #TODO: Set the IAM instance profile if one is used
 - name: Create replacement instance
   delegate_to: localhost
   community.aws.ec2_instance:
     aws_access_key: "{{ ansible_env.AWS_ACCESS_KEY_ID | default(omit) }}"
     aws_secret_key: "{{ ansible_env.AWS_SECRET_ACCESS_KEY | default(omit) }}"
     security_token: "{{ ansible_env.AWS_SESSION_TOKEN | default(omit) }}"
-    #profile: "{{ inject.profile | default(omit) }}"
     region: "{{ ansible_env.AWS_DEFAULT_REGION | default(omit) }}"
     ec2_url: '{{ aws_ec2_url | default(omit) }}'
     validate_certs: '{{ aws_ssl_enabled }}'
-    ebs_optimized: '{{ donor_instance.ebs_optimized }}'
-    key_name: '{{ donor_instance.key_name }}'
-    instance_type: '{{ donor_instance.instance_type }}'
-    image_id: '{{ rhel_6_els_ami.image_id }}'
+    image_id: '{{ target_ami_id }}'
     wait: true
-    name: "ELS replacement {{ donor_instance.instance_id }}"
+    name: "Replacement for {{ donor_instance.instance_id }}"
+    instance_profile_name: '{{ donor_instance.iam_instance_profile | default(omit) }}'
+    availability_zone: '{{ donor_instance.placement.availability_zone }}'
+    key_name: '{{ donor_instance.key_name }}'
     vpc_subnet_id: '{{ donor_instance.subnet_id }}'
-    #group_id: '{{ donor_instance. }}'
-    #instance_profile_name: '{{ donor_instance. }}'
-    #instance_tags: '{{ donor_instance. }}'
+    security_groups: "{{ donor_instance.security_groups }}",
+    tags: "{{ donor_instance.tags }}",
+    instance_type: '{{ donor_instance.instance_type }}'
+    ebs_optimized: '{{ donor_instance.ebs_optimized }}'
+    placement_group: "{{ donor_instance.placement.group_name }}"
     state: running
   register: replacement_instance
 
@@ -38,7 +42,6 @@
     aws_access_key: "{{ ansible_env.AWS_ACCESS_KEY_ID | default(omit) }}"
     aws_secret_key: "{{ ansible_env.AWS_SECRET_ACCESS_KEY | default(omit) }}"
     security_token: "{{ ansible_env.AWS_SESSION_TOKEN | default(omit) }}"
-    #profile: "{{ inject.profile | default(omit) }}"
     region: "{{ ansible_env.AWS_DEFAULT_REGION | default(omit) }}"
     ec2_url: '{{ aws_ec2_url | default(omit) }}'
     validate_certs: '{{ aws_ssl_enabled }}'
@@ -56,7 +59,6 @@
     aws_access_key: "{{ ansible_env.AWS_ACCESS_KEY_ID | default(omit) }}"
     aws_secret_key: "{{ ansible_env.AWS_SECRET_ACCESS_KEY | default(omit) }}"
     security_token: "{{ ansible_env.AWS_SESSION_TOKEN | default(omit) }}"
-    #profile: "{{ inject.profile | default(omit) }}"
     region: "{{ ansible_env.AWS_DEFAULT_REGION | default(omit) }}"
     ec2_url: '{{ aws_ec2_url | default(omit) }}'
     validate_certs: '{{ aws_ssl_enabled }}'
@@ -70,7 +72,6 @@
     aws_access_key: "{{ ansible_env.AWS_ACCESS_KEY_ID | default(omit) }}"
     aws_secret_key: "{{ ansible_env.AWS_SECRET_ACCESS_KEY | default(omit) }}"
     security_token: "{{ ansible_env.AWS_SESSION_TOKEN | default(omit) }}"
-    #profile: "{{ inject.profile | default(omit) }}"
     region: "{{ ansible_env.AWS_DEFAULT_REGION | default(omit) }}"
     ec2_url: '{{ aws_ec2_url | default(omit) }}'
     validate_certs: '{{ aws_ssl_enabled }}'
@@ -83,7 +84,6 @@
     aws_access_key: "{{ ansible_env.AWS_ACCESS_KEY_ID | default(omit) }}"
     aws_secret_key: "{{ ansible_env.AWS_SECRET_ACCESS_KEY | default(omit) }}"
     security_token: "{{ ansible_env.AWS_SESSION_TOKEN | default(omit) }}"
-    #profile: "{{ inject.profile | default(omit) }}"
     region: "{{ ansible_env.AWS_DEFAULT_REGION | default(omit) }}"
     ec2_url: '{{ aws_ec2_url | default(omit) }}'
     validate_certs: '{{ aws_ssl_enabled }}'
@@ -119,7 +119,6 @@
     aws_access_key: "{{ ansible_env.AWS_ACCESS_KEY_ID | default(omit) }}"
     aws_secret_key: "{{ ansible_env.AWS_SECRET_ACCESS_KEY | default(omit) }}"
     security_token: "{{ ansible_env.AWS_SESSION_TOKEN | default(omit) }}"
-    #profile: "{{ inject.profile | default(omit) }}"
     region: "{{ ansible_env.AWS_DEFAULT_REGION | default(omit) }}"
     ec2_url: '{{ aws_ec2_url | default(omit) }}'
     validate_certs: '{{ aws_ssl_enabled }}'
